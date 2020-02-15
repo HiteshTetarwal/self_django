@@ -1,0 +1,152 @@
+[1mdiff --git a/blog/templates/blog/home.html b/blog/templates/blog/home.html[m
+[1mindex 94b6036..f201f04 100644[m
+[1m--- a/blog/templates/blog/home.html[m
+[1m+++ b/blog/templates/blog/home.html[m
+[36m@@ -2,6 +2,7 @@[m
+ {% block content %}[m
+ 	{% for post in posts %}[m
+ 		<article class="media content-section">[m
+[32m+[m			[32m<img class="rounded-circle article-img" src="{{post.author.profile.image.url}}">[m
+ 		  <div class="media-body">[m
+ 		    <div class="article-metadata">[m
+ 		      <a class="mr-2" href="#">{{ post.author }}</a>[m
+[1mdiff --git a/db.sqlite3 b/db.sqlite3[m
+[1mindex 4953093..87f8356 100644[m
+Binary files a/db.sqlite3 and b/db.sqlite3 differ
+[1mdiff --git a/users/__pycache__/forms.cpython-37.pyc b/users/__pycache__/forms.cpython-37.pyc[m
+[1mindex dcad1d5..28dba5d 100644[m
+Binary files a/users/__pycache__/forms.cpython-37.pyc and b/users/__pycache__/forms.cpython-37.pyc differ
+[1mdiff --git a/users/__pycache__/models.cpython-37.pyc b/users/__pycache__/models.cpython-37.pyc[m
+[1mindex 0af0d90..4d3584a 100644[m
+Binary files a/users/__pycache__/models.cpython-37.pyc and b/users/__pycache__/models.cpython-37.pyc differ
+[1mdiff --git a/users/__pycache__/views.cpython-37.pyc b/users/__pycache__/views.cpython-37.pyc[m
+[1mindex 938506f..970b715 100644[m
+Binary files a/users/__pycache__/views.cpython-37.pyc and b/users/__pycache__/views.cpython-37.pyc differ
+[1mdiff --git a/users/forms.py b/users/forms.py[m
+[1mindex 7fc95c3..aa8cb7d 100644[m
+[1m--- a/users/forms.py[m
+[1m+++ b/users/forms.py[m
+[36m@@ -1,6 +1,7 @@[m
+ from django import forms[m
+ from django.contrib.auth.models import User[m
+ from django.contrib.auth.forms import UserCreationForm[m
+[32m+[m[32mfrom .models import Profile[m
+ [m
+ [m
+ class UserRegisterForm(UserCreationForm):[m
+[36m@@ -8,4 +9,19 @@[m [mclass UserRegisterForm(UserCreationForm):[m
+ [m
+ 	class Meta:[m
+ 		model=User[m
+[31m-		fields=['username','email','password1','password2'][m
+\ No newline at end of file[m
+[32m+[m		[32mfields=['username','email','password1','password2'][m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass UserUpdateForm(forms.ModelForm):[m
+[32m+[m	[32memail=forms.EmailField()[m
+[32m+[m
+[32m+[m	[32mclass Meta:[m
+[32m+[m		[32mmodel=User[m
+[32m+[m		[32mfields=['username','email'][m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass ProfileUpdateForm(forms.ModelForm):[m
+[32m+[m	[32mclass Meta:[m
+[32m+[m		[32mmodel=Profile[m
+[32m+[m		[32mfields=['image'][m
+[1mdiff --git a/users/models.py b/users/models.py[m
+[1mindex b046b1b..8b328c7 100644[m
+[1m--- a/users/models.py[m
+[1m+++ b/users/models.py[m
+[36m@@ -1,9 +1,21 @@[m
+ from django.db import models[m
+ from django.contrib.auth.models import User[m
+[32m+[m[32mfrom PIL import Image[m
+ [m
+ class Profile(models.Model):[m
+ 	user=models.OneToOneField(User, on_delete=models.CASCADE)[m
+ 	image=models.ImageField(default='default.jpg',upload_to='profile_pics')[m
+ [m
+ 	def __str__(self):[m
+[31m-		return f'{self.user.username} Profile'[m
+\ No newline at end of file[m
+[32m+[m		[32mreturn f'{self.user.username} Profile'[m
+[32m+[m
+[32m+[m
+[32m+[m	[32mdef save(self):[m
+[32m+[m		[32msuper().save()[m
+[32m+[m
+[32m+[m		[32mimg=Image.open(self.image.path)[m
+[32m+[m
+[32m+[m		[32mif img.height > 300 or img.width >300:[m
+[32m+[m			[32moutput_size=(300,300)[m
+[32m+[m			[32mimg.thumbnail(output_size)[m
+[32m+[m			[32mimg.save(self.image.path)[m
+\ No newline at end of file[m
+[1mdiff --git a/users/templates/users/profile.html b/users/templates/users/profile.html[m
+[1mindex c071f77..43ed3d4 100644[m
+[1m--- a/users/templates/users/profile.html[m
+[1m+++ b/users/templates/users/profile.html[m
+[36m@@ -9,6 +9,16 @@[m
+       <p class="text-secondary">{{user.email}}</p>[m
+     </div>[m
+   </div>[m
+[31m-  <!-- FORM HERE -->[m
+[32m+[m[32m  <form method="POST" enctype="multipart/form-data">[m
+[32m+[m		[32m{% csrf_token %}[m
+[32m+[m		[32m<fieldset class="form-group">[m
+[32m+[m			[32m<legend class="border-bottom mb-4">Profile Info</legend>[m
+[32m+[m			[32m{{u_form|crispy}}[m
+[32m+[m			[32m{{p_form|crispy}}[m
+[32m+[m		[32m</fieldset>[m
+[32m+[m		[32m<div class="form-group">[m
+[32m+[m			[32m<button class="btn btn-outline-info" type="submit">Update</button>[m
+[32m+[m		[32m</div>[m
+[32m+[m[41m [m	[32m</form>[m
+ </div>[m
+ {% endblock content %}  [m
+\ No newline at end of file[m
+[1mdiff --git a/users/views.py b/users/views.py[m
+[1mindex 8e6a7bf..170fae1 100644[m
+[1m--- a/users/views.py[m
+[1m+++ b/users/views.py[m
+[36m@@ -1,6 +1,6 @@[m
+ from django.shortcuts import render,redirect[m
+ from django.contrib import messages[m
+[31m-from .forms import UserRegisterForm[m
+[32m+[m[32mfrom .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm[m
+ from django.contrib.auth.decorators import login_required[m
+ [m
+ def register(request):[m
+[36m@@ -13,9 +13,25 @@[m [mdef register(request):[m
+ 			return redirect('login')[m
+ 	else:[m
+ 		form=UserRegisterForm()[m
+[31m-	form = UserRegisterForm()[m
+ 	return render(request,'users/register.html',{'form':form})[m
+ [m
+ @login_required[m
+ def profile(request):[m
+[31m-	return render(request,'users/profile.html')[m
+\ No newline at end of file[m
+[32m+[m	[32mif request.method == 'POST':[m
+[32m+[m		[32mu_form=UserUpdateForm(request.POST,instance=request.user)[m
+[32m+[m		[32mp_form=ProfileUpdateForm(request.POST,request.FILES,instance=request.user.profile)[m
+[32m+[m[41m	[m
+[32m+[m		[32mif u_form.is_valid() and p_form.is_valid():[m
+[32m+[m			[32mu_form.save()[m
+[32m+[m			[32mp_form.save()[m
+[32m+[m			[32mmessages.success(request,f'Your account has been updated!')[m
+[32m+[m			[32mreturn redirect('profile')[m
+[32m+[m	[32melse:[m
+[32m+[m		[32mu_form=UserUpdateForm(instance=request.user)[m
+[32m+[m		[32mp_form=ProfileUpdateForm(instance=request.user.profile)[m
+[32m+[m	[32mcontext={[m
+[32m+[m		[32m'u_form':u_form,[m
+[32m+[m		[32m'p_form':p_form,[m
+[32m+[m	[32m}[m
+[32m+[m
+[32m+[m	[32mreturn render(request,'users/profile.html',context)[m
+\ No newline at end of file[m
